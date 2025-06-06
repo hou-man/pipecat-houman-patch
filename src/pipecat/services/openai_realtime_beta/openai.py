@@ -579,6 +579,12 @@ class OpenAIRealtimeBetaLLMService(LLMService):
             logger.warning(f"Audio truncation error (non-fatal): {evt.error.message}")
             return
 
+        # Check if this is a request cancellation error we want to handle gracefully
+        if "Request was canceled" in str(evt.error.message):
+            # Log this as a warning instead of treating it as fatal
+            logger.warning(f"Request cancellation error (non-fatal): {evt.error.message}")
+            return
+
         # All other errors are fatal to this connection. Send an ErrorFrame.
         await self.push_error(ErrorFrame(error=f"Error: {evt}", fatal=True))
 
