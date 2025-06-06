@@ -571,7 +571,15 @@ class OpenAIRealtimeBetaLLMService(LLMService):
         return False
 
     async def _handle_evt_error(self, evt):
-        # Errors are fatal to this connection. Send an ErrorFrame.
+        # Check if this is the specific audio truncation error we want to handle gracefully
+        if (evt.error.code == "invalid_value" and
+            "Audio content" in evt.error.message and
+            "is already shorter than" in evt.error.message):
+            # Log this as a warning instead of treating it as fatal
+            logger.warning(f"Audio truncation error (non-fatal): {evt.error.message}")
+            return
+
+        # All other errors are fatal to this connection. Send an ErrorFrame.
         await self.push_error(ErrorFrame(error=f"Error: {evt}", fatal=True))
 
     async def _handle_assistant_output(self, output):
